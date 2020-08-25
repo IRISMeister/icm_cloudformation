@@ -1,0 +1,124 @@
+AWSTemplateFormatVersion: 2010-09-09
+Metadata:
+  Author: https://github.com/IRISMeister
+  Last Updated: August 24, 2020
+  Description: ICM launcher
+Description: >-
+  Based on AWS CloudFormation Sample Template EC2InstanceWithSecurityGroupSample.
+Parameters:
+  VpcIdParameter:
+    Description: Launch EC2 instances in this VPC
+    Type: AWS::EC2::VPC::Id
+  SSHLocationParameter:
+    Description: The IP address range that can be used to SSH to the EC2 instances
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  IamInstanceProfileParameter:
+    Description: IAM instance role for ICM + s3:read
+    Type: String
+  InstanceSecurityGroupParameter:
+    Description:  Security group for the instance
+    Type: AWS::EC2::SecurityGroup::Id
+  KeyNameParameter:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  InstanceTypeParameter:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.medium
+    ConstraintDescription: must be a valid EC2 instance type.
+  LatestAmiIdParameter:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+  WRCUserParameter:
+    Type: String
+  WRCTokenParameter:
+    Description: Leave it empty. Don't use this yet. Token for container registry server. 
+    Type: String
+    NoEcho: true
+  ICMKitVersionParameter:
+    Description: ICM Kit version
+    Type: String
+    Default: 2020.1.0.215.0
+    AllowedValues:
+      - 2019.1.1.615.1
+      - 2020.1.0.215.0
+      - 2020.2.0.211.0
+      - 2020.3.0.200.0
+Resources:
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow all hosts in this group to access each other on port 80
+      GroupName: !Sub "${AWS::StackName}-ICM-SG"
+      VpcId: !Ref VpcIdParameter
+      Tags:
+      - Key: Name
+        Value: !Ref WRCUserParameter
+  SecurityGroupIngressSSH:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref InstanceSecurityGroup
+      IpProtocol: TCP
+      FromPort: 22
+      ToPort: 22
+      CidrIp: !Ref SSHLocationParameter
+  EC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      Tags:
+      - Key: Name
+        Value: !Ref WRCUserParameter
+      InstanceType: !Ref InstanceTypeParameter
+      IamInstanceProfile: !Ref IamInstanceProfileParameter
+      SecurityGroupIds:
+        - !Ref InstanceSecurityGroup
+      KeyName: !Ref KeyNameParameter
+      ImageId: !Ref LatestAmiIdParameter
+      UserData:
+        Fn::Base64:
+         Fn::Sub:
+         - |
+           #!/usr/bin/env bash
+           yum -y update
+           yum install -y git
+           yum install jq -y
+           yum install -y docker
+           systemctl start docker
+           usermod -a -G docker ec2-user
+           docker login -u="${WRCUser}" -p="${WRCToken}" containers.intersystems.com
+           docker pull containers.intersystems.com/intersystems/icm:${ICMKitVersion}
+           region=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -e 's/.$//')
+           mkdir /home/ec2-user/.aws
+           touch /home/ec2-user/.aws/credentials
+           echo "[default]" > /home/ec2-user/.aws/config
+           echo "region = $region" >> /home/ec2-user/.aws/config
+           chown -R ec2-user:ec2-user /home/ec2-user/.aws
+         - {
+           WRCUser: !Ref WRCUserParameter,
+           WRCToken: !Ref WRCTokenParameter,
+           ICMKitVersion: !Ref ICMKitVersionParameter
+           }
+Outputs:
+  InstanceId:
+    Description: InstanceId of the newly created EC2 instance
+    Value: !Ref EC2Instance
+  AZ:
+    Description: Availability Zone of the newly created EC2 instance
+    Value: !GetAtt 
+      - EC2Instance
+      - AvailabilityZone
+  PublicDNS:
+    Description: Public DNSName of the newly created EC2 instance
+    Value: !GetAtt 
+      - EC2Instance
+      - PublicDnsName
