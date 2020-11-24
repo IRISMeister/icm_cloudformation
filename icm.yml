@@ -6,9 +6,6 @@ Metadata:
 Description: >-
   Based on AWS CloudFormation Sample Template EC2InstanceWithSecurityGroupSample.
 Parameters:
-  VpcIdParameter:
-    Description: Launch EC2 instances in this VPC
-    Type: AWS::EC2::VPC::Id
   SSHLocationParameter:
     Description: The IP address range that can be used to SSH to the EC2 instances
     Type: String
@@ -23,6 +20,9 @@ Parameters:
   InstanceSecurityGroupParameter:
     Description:  Security group for the instance
     Type: AWS::EC2::SecurityGroup::Id
+  SubnetIdParameter:
+    Description:  SubnetId
+    Type: AWS::EC2::Subnet::Id
   KeyNameParameter:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
@@ -53,35 +53,19 @@ Parameters:
       - 2019.1.1.615.1
       - 2020.1.0.215.0
       - 2020.2.0.211.0
-      - 2020.3.0.200.0
+      - 2020.3.0.221.0
 Resources:
-  InstanceSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Allow all hosts in this group to access each other on port 80
-      GroupName: !Sub "${AWS::StackName}-ICM-SG"
-      VpcId: !Ref VpcIdParameter
-      Tags:
-      - Key: Name
-        Value: !Ref WRCUserParameter
-  SecurityGroupIngressSSH:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref InstanceSecurityGroup
-      IpProtocol: TCP
-      FromPort: 22
-      ToPort: 22
-      CidrIp: !Ref SSHLocationParameter
   EC2Instance:
     Type: 'AWS::EC2::Instance'
     Properties:
       Tags:
       - Key: Name
         Value: !Ref WRCUserParameter
+      SubnetId: !Ref SubnetIdParameter
       InstanceType: !Ref InstanceTypeParameter
       IamInstanceProfile: !Ref IamInstanceProfileParameter
       SecurityGroupIds:
-        - !Ref InstanceSecurityGroup
+        - !Ref InstanceSecurityGroupParameter
       KeyName: !Ref KeyNameParameter
       ImageId: !Ref LatestAmiIdParameter
       UserData:
