@@ -4,7 +4,7 @@ Metadata:
   Last Updated: August 24, 2020
   Description: ICM launcher
 Description: >-
-  Based on AWS CloudFormation Sample Template EC2InstanceWithSecurityGroupSample.
+  Launch ICM from within provisioned EC2 instance.
 Parameters:
   SSHLocationParameter:
     Description: The IP address range that can be used to SSH to the EC2 instances
