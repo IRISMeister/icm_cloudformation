@@ -92,8 +92,8 @@ Resources:
            chown -R ec2-user:ec2-user $targetdir/.aws
            #
            git clone https://github.com/IRISMeister/irisdemo-demo-htap.git $targetdir/irisdemo-demo-htap
-           aws s3 cp s3://$s3bucket/iris.key $targetdir/irisdemo-demo-htap/ICM/ICMDurable/license
-           aws s3 cp s3://$s3bucket/IRIS-${ICMKitVersion}-lnxubuntux64.tar.gz $targetdir/irisdemo-demo-htap/ICM/ICMDurable/IRISKit
+           aws s3 cp s3://$s3bucket/iris.key $targetdir/irisdemo-demo-htap/ICM/ICMDurable/license/
+           aws s3 cp s3://$s3bucket/IRIS-${ICMKitVersion}-lnxubuntux64.tar.gz $targetdir/irisdemo-demo-htap/ICM/ICMDurable/IRISKit/
            cp /home/ec2-user/.aws/credentials $targetdir/irisdemo-demo-htap/ICM/ICMDurable/aws.credentials
            chown -R ec2-user:ec2-user $targetdir/irisdemo-demo-htap
          - {
