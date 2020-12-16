@@ -30,9 +30,8 @@ Parameters:
   InstanceTypeParameter:
     Description: WebServer EC2 instance type
     Type: String
-    Default: t2.micro
+    Default: t2.small
     AllowedValues:
-      - t2.micro
       - t2.small
       - t2.medium
     ConstraintDescription: must be a valid EC2 instance type.
@@ -54,6 +53,10 @@ Parameters:
       - 2020.1.0.215.0
       - 2020.2.0.211.0
       - 2020.3.0.221.0
+  S3BucketParameter:
+    Description: S3 Bucket where you download iris kits/license. 
+    Type: String
+    Default: my-bucket
 Resources:
   EC2Instance:
     Type: 'AWS::EC2::Instance'
@@ -83,7 +86,7 @@ Resources:
            docker pull containers.intersystems.com/intersystems/icm:${ICMKitVersion}
            region=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed -e 's/.$//')
            targetdir=/home/ec2-user
-           s3bucket=my-bucket
+           s3bucket={S3Bucket}
 
            mkdir $targetdir/.aws
            touch $targetdir/.aws/credentials
@@ -99,7 +102,8 @@ Resources:
          - {
            WRCUser: !Ref WRCUserParameter,
            WRCToken: !Ref WRCTokenParameter,
-           ICMKitVersion: !Ref ICMKitVersionParameter
+           ICMKitVersion: !Ref ICMKitVersionParameter,
+           S3Bucket: !Ref S3BucketParameter
            }
 Outputs:
   InstanceId:
